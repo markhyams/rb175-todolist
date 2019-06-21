@@ -1,0 +1,13 @@
+<ul id="lists">
+  <% display_and_sort_lists(@lists).each do |list| %>
+    <li <%= "class=\"complete\"" if list[:completed] %>>
+      <a href="/lists/<%= list[:index] %>">
+        <h2><%= list[:name] %></h2>
+        <p><%= list[:remaining] %> / <%= list[:total] %></p>
+      </a>
+    </li>
+  <% end %>
+</ul>
+<% content_for :header_links do %>
+  <a class="add" href="/lists/new">New List</a>
+<% end %>
