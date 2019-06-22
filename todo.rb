@@ -6,11 +6,20 @@ require "tilt/erubis"
 configure do
   enable :sessions
   set :session_secret, 'secret'
+  set :erb, :escape_html => true
 end
 
 helpers do
   def complete?(list)
     todos_remaining_count(list) == 0 && todos_count(list) > 0
+  end
+  
+  def list_class(list)
+    "complete" if complete?(list)
+  end
+  
+  def todo_class(todo)
+    "complete" if todo[:completed]
   end
   
   def todos_remaining_count(list)
@@ -29,7 +38,8 @@ helpers do
         index: index, 
         remaining: todos_remaining_count(list),
         total: todos_count(list),
-        completed: complete?(list)
+        completed: complete?(list),
+        css_class: list_class(list)
       }
     end
     sort_by_completed(result)
@@ -41,7 +51,8 @@ helpers do
       result << {
         name: todo[:name],
         index: index,
-        completed: todo[:completed]
+        completed: todo[:completed],
+        css_class: todo_class(todo)
       }
     end
     sort_by_completed(result)
@@ -96,7 +107,7 @@ post "/lists" do
     session[:error] = error
     erb :new_list, layout: :layout
   else
-    session[:lists] << { name: list_name, todos: [] }
+    @lists << { name: list_name, todos: [] }
     session[:success] = "The list has been created."
     redirect "/lists"
   end
@@ -107,7 +118,12 @@ get "/lists/:list_index" do
   @id = params[:list_index].to_i
   @list = @lists[@id]
   
-  erb :list
+  if !@list
+    session[:error] = "The specified list was not found."
+    redirect "/lists"
+  else
+    erb :list
+  end
 end
 
 # Edit a list

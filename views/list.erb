@@ -1,4 +1,8 @@
-<section id="todos" <%= "class=\"complete\"" if complete?(@list) %>>
+<section id="todos"
+  <% if complete?(@list) %>
+    class="complete"
+  <% end %>
+>
   <header>
     <h2><%= @list[:name] %></h2>
     <ul>
@@ -15,7 +19,7 @@
 
   <ul>
     <% format_and_sort_todos(@list).each do |todo| %>
-      <li <%= "class=\"complete\"" if todo[:completed] %>>
+    <li class="<%= todo[:css_class] %>" >
         <form action="/list/<%= @id %>/todos/<%= todo[:index] %>/mark" method="post" class="check">
           <input type="hidden" name="completed" value="<%= !todo[:completed] %>" />
           <button type="submit">Complete</button>

@@ -1,6 +1,6 @@
 <ul id="lists">
   <% display_and_sort_lists(@lists).each do |list| %>
-    <li <%= "class=\"complete\"" if list[:completed] %>>
+    <li class="<%= list[:css_class] %>" >
       <a href="/lists/<%= list[:index] %>">
         <h2><%= list[:name] %></h2>
         <p><%= list[:remaining] %> / <%= list[:total] %></p>
