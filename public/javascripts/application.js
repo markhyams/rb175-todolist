@@ -1,10 +1,10 @@
 $(function() {
   
-  $("form.delete").submit(function(event) {
+  $("form.fadeout").submit(function(event) {
     event.preventDefault();
     event.stopPropagation();
     
-    var ok = confirm("Are you sure? This cannot be undone!");
+    var ok = true //confirm("Are you sure? This cannot be undone ever!");
     
     if (ok) {
       // this.submit();
@@ -18,7 +18,7 @@ $(function() {
       
       request.done(function(data, textStatus, jqXHR) {
         if (jqXHR.status == 204) {
-          form.parent("li").remove();
+          form.parent("li").slideUp(500, function() { $(this).remove(); });
         } else if (jqXHR.status == 200) {
           document.location = data;
         }
@@ -26,4 +26,21 @@ $(function() {
     }
     
   });
+  
+});
+
+$(function() {
+  
+  $("form.confirm").submit(function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    var ok = confirm("Are you sure? This cannot be undone ever!");
+    
+    if (ok) {
+      this.submit();
+    }
+    
+  });
+  
 });

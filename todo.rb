@@ -23,11 +23,11 @@ helpers do
   end
   
   def todos_remaining_count(list)
-    list[:todos].count { |todo| todo[:completed] == false }
+    list[:todos].count { |todo| todo[:completed] == false && todo[:trashed] == false }
   end
   
   def todos_count(list)
-    list[:todos].size
+    list[:todos].count { |todo| todo[:trashed] == false }
   end
   
   def display_and_sort_lists(lists)
@@ -39,15 +39,17 @@ helpers do
         remaining: todos_remaining_count(list),
         total: todos_count(list),
         completed: complete?(list),
-        css_class: list_class(list)
+        css_class: list_class(list),
       }
     end
     sort_by_completed(result)
   end
   
-  def format_and_sort_todos(list)
+  def format_and_sort_todos(list, trashed = false)
     result = []
-    list[:todos].each_with_index do |todo, index|
+    todos = list[:todos].select { |todo| todo[:trashed] == trashed }
+    
+    todos.each_with_index do |todo, index|
       result << {
         name: todo[:name],
         index: todo[:id],
@@ -57,6 +59,14 @@ helpers do
     end
     sort_by_completed(result)
   end 
+  
+  def trashed_todos(list)
+    format_and_sort_todos(list, true)
+  end
+  
+  def num_trashed_todos(list)
+    trashed_todos(list).size
+  end
   
   def sort_by_completed(items)
     items.sort_by { |item| item[:completed] ? 1 : 0 }
@@ -104,6 +114,7 @@ def next_id(items)
   max_id + 1
 end
 
+# retrieve todo list based on id
 def load_list(id)
   list_to_load = @lists.find { |list| list[:id] == id }
   if !list_to_load
@@ -112,6 +123,11 @@ def load_list(id)
   else
     list_to_load
   end
+end
+
+# retrieve todo item based on id
+def load_todo(id)
+  @list[:todos].find { |todo| todo[:id] == id }
 end
 
 # Create a new list
@@ -166,7 +182,8 @@ end
 
 # delete a todo list
 post "/lists/:list_index/destroy" do
-  @lists.delete_at(params[:list_index].to_i)
+  id = params[:list_index].to_i
+  @lists.delete_if { |list| list[:id] == id }
   
   if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
     "/lists"
@@ -190,36 +207,54 @@ post "/lists/:list_index/todos" do
   else  
     
     new_id = next_id(@list[:todos])
-    @list[:todos] << { id: new_id, name: todo_name, completed: false }
+    @list[:todos] << { id: new_id, name: todo_name, completed: false, trashed: false }
     session[:success] = "The todo has been added."
     redirect "/lists/#{@list[:id]}"
   end 
 end
 
-# delete a todo item from a list
-post "/list/:list_index/todos/:todo_index/destroy" do
+# trash a todo item from a list
+post "/lists/:list_index/todos/:todo_index/trash" do
   id = params[:list_index].to_i
   @list = load_list(id)
 
   todo_index = params[:todo_index].to_i
-  @list[:todos].delete_if { |todo| todo[:id] == todo_index }
-  
+  todo_to_trash = load_todo(todo_index)
+  todo_to_trash[:trashed] = true
+
   if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
     status 204
   else
-    session[:success] = "The todo has been deleted."
+    session[:success] = "The todo has been trashed."
     redirect "/lists/#{@list[:id]}"
   end
 end
 
+# restore a todo item from a list
+post "/lists/:list_index/todos/:todo_index/restore" do
+  id = params[:list_index].to_i
+  @list = load_list(id)
+
+  todo_index = params[:todo_index].to_i
+  todo_to_restore = load_todo(todo_index)
+  todo_to_restore[:trashed] = false
+
+  if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
+    status 204
+  else
+    session[:success] = "The todo has been restored."
+    redirect "/lists/#{@list[:id]}/edit"
+  end
+end
+
 # toggle checked/completed on todo
-post "/list/:list_index/todos/:todo_index/mark" do
+post "/lists/:list_index/todos/:todo_index/mark" do
   id = params[:list_index].to_i
   @list = load_list(id)
 
   todo_index = params[:todo_index].to_i
   mark = params[:completed] == "true"
-  todo_to_mark = @list[:todos].find { |todo| todo[:id] == todo_index }
+  todo_to_mark = load_todo(todo_index)
   todo_to_mark[:completed] = mark
 
   session[:success] = "The todo has been marked as #{ mark ? "" : "not " }completed."
@@ -232,9 +267,22 @@ post "/lists/:list_index/complete" do
   @list = load_list(id)
 
   @list[:todos].each do |todo|
-    todo[:completed] = true
+    todo[:completed] = true unless todo[:trashed]
   end
   
   session[:success] = "All todos have been marked as completed."
+  redirect "/lists/#{@list[:id]}"
+end
+
+# empty trash for a list
+post "/lists/:list_index/emptytrash" do
+  id = params[:list_index].to_i
+  @list = load_list(id)
+
+  @list[:todos].delete_if do |todo|
+    todo[:trashed] == true
+  end
+  
+  session[:success] = "Trashed todos have been deleted forever."
   redirect "/lists/#{@list[:id]}"
 end

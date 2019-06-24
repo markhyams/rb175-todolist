@@ -1,27 +1,54 @@
 <section id="todos">
   <header>
-    <h2>Editing '<%= @list[:name] %>'</h2>
+    <h2>Editing '<a href="/lists/<%= @list[:id] %>"><%= @list[:name] %></a>'</h2>
     <ul>
       <li>
-        <form class="delete" action="/lists/<%= @list[:id] %>/destroy" method="post">
+        <form class="delete confirm" action="/lists/<%= @list[:id] %>/destroy" method="post">
           <button type="submit" class="delete">Delete List</button>
         </form>
       </li>
     </ul>
   </header>
-</section>
+  
+<br />
 
-<form action="/lists/<%= @list[:id] %>" method="post">
-  <dl>
-    <dt>
-      <label for="list_name">Enter the new name for the list:</label>
-    </dt>
-    <dd>
-      <input name="list_name" type="text" value="<%= params[:list_name] || @list[:name] %>">
-    </dd>
-  </dl>
-  <fieldset class="actions">
-    <input type="submit" value="Save">
-    <a href="/lists/<%= @list[:id] %>">Cancel</a>
-  </fieldset>
-</form>
+  <header>
+    <h2>Trashed items: (click item to restore)</h2>
+    <ul>
+      <li>
+        <form class="delete confirm" action="/lists/<%= @list[:id] %>/emptytrash" method="post">
+          <button type="submit" class="delete">Empty Trash</button>
+        </form>
+      </li>
+    </ul>
+
+  </header>
+  
+  
+  <ul>
+    <% trashed_todos(@list).each do |todo| %>
+    <li class="<%= todo[:css_class] %>" >
+        <form action="/lists/<%= @list[:id] %>/todos/<%= todo[:index] %>/restore" method="post" class="check fadeout">
+          <input type="hidden" name="completed" value="<%= !todo[:completed] %>" />
+          <button type="submit">Complete</button>
+        </form>
+        <h3><%= todo[:name] %></h3>
+      </li>
+    <% end %>
+  </ul>
+
+  <form action="/lists/<%= @list[:id] %>" method="post">
+    <dl>
+      <dt>
+        <label for="list_name">Enter the new name for the list:</label>
+      </dt>
+      <dd>
+        <input name="list_name" type="text" value="<%= params[:list_name] || @list[:name] %>">
+      </dd>
+    </dl>
+    <fieldset class="actions">
+      <input type="submit" value="Rename">
+      <a href="/lists/<%= @list[:id] %>">Return to List</a>
+    </fieldset>
+  </form>
+</section>
