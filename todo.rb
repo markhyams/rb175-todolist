@@ -286,3 +286,7 @@ post "/lists/:list_index/emptytrash" do
   session[:success] = "Trashed todos have been deleted forever."
   redirect "/lists/#{@list[:id]}"
 end
+
+get "/hello_world" do
+  "Hello, world!"
+end
